@@ -1,0 +1,61 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 400px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #fff;
+  background: linear-gradient(135deg, #09b1ba 0%, #0891a8 100%);
+}
+
+header {
+  padding: 24px 20px;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+main {
+  padding: 0 24px 24px;
+}
+
+.popup-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 15px;
+}
+
+.popup-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.popup-card-text {
+  font-size: 14px;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.popup-card-text a {
+  color: white;
+  text-decoration: underline;
+  font-weight: 600;
+}

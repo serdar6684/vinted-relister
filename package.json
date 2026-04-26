@@ -1,0 +1,36 @@
+{
+  "name": "vinted-relister",
+  "version": "0.1.0",
+  "description": "Chrome extension to quickly relist your items on vinted.fr",
+  "type": "module",
+  "scripts": {
+    "build": "cross-env NODE_ENV=production rollup -c",
+    "build:dev": "cross-env NODE_ENV=development rollup -c",
+    "dev": "cross-env NODE_ENV=development rollup -c --watch",
+    "package": "zip -r extension.zip dist",
+    "lint": "eslint src/**/*.js",
+    "lint:fix": "eslint src/**/*.js --fix"
+  },
+  "keywords": [
+    "chrome-extension",
+    "vinted",
+    "republish",
+    "relister"
+  ],
+  "author": "serdar6684",
+  "license": "MIT",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.8",
+    "@rollup/plugin-image": "^3.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-replace": "^6.0.2",
+    "@rollup/plugin-terser": "^0.4.4",
+    "cross-env": "^10.1.0",
+    "eslint": "^8.0.0",
+    "rollup": "^4.52.5",
+    "rollup-plugin-copy": "^3.5.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
