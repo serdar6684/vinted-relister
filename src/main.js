@@ -8,7 +8,7 @@ import { observeItemChanges, scheduleRetries } from './ui.js';
 console.log('Vinted ReLister chargé', CONFIG.version);
 
 const isDashboardPage = () =>
-  window.location.pathname.startsWith(CONFIG.selectors.dashboardPath);
+  CONFIG.selectors.dashboardPathPattern.test(window.location.pathname);
 
 let isInitialized = false;
 

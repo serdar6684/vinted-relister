@@ -10,24 +10,30 @@ export const CONFIG = {
   version: process.env.VERSION,
   baseHost: 'https://www.vinted.fr',
 
-  selectors: {
-    // Dashboard URL: /member/items/current — "Mes articles → En vente"
-    dashboardPath: '/member/items/current',
+  // Diagnostic logging. Enabled in dev builds (set to false before prod ship).
+  debug: true,
 
-    // Item card containers in the dressing grid. Vinted uses hashed CSS
-    // classes; data-testid is the only reasonably stable hook.
-    itemContainer: '[data-testid^="item-box-"]',
+  selectors: {
+    // Dashboard URL: /member/{user_id} (the public profile, "Annonces" tab is
+    // active by default and lists the seller's items). User id is numeric.
+    dashboardPathPattern: /^\/member\/\d+\/?$/,
+
+    // Item card containers in the dressing grid. Confirmed via diagnostic
+    // run on /member/{id}: each card has data-testid="grid-item".
+    itemContainer: '[data-testid="grid-item"]',
     itemLink: 'a[href*="/items/"]',
 
-    // Where the republish button gets injected. Confirmed visually after
-    // loading the unpacked extension on /member/items/current.
-    actionsContainer: '[data-testid$="--overlay"], .web_ui__ItemBox__overlay',
+    // The official "Booster" CTA Vinted ships per card. We inject our
+    // republish button right next to it (same actions row).
+    // Vinted internally calls this "bump", not "booster".
+    bumpButton: '[data-testid="bump-button"]',
 
     // Marker on the injected button itself, used to dedupe re-injections.
     republishButton: '[data-vrl-republish-btn]',
 
-    // Outer dressing list. Used as MutationObserver target; falls back to body.
-    itemListContainer: '[data-testid="closet-grid"], [data-testid="item-grid"]'
+    // Outer dressing list. No reliable single testid wrapping all grid-items
+    // on the public profile page, so the observer falls back to document.body.
+    itemListContainer: '[data-testid="closet-grid"], [data-testid="item-grid"], [data-testid="profile-items"]'
   },
 
   delays: {

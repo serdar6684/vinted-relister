@@ -98,37 +98,57 @@ const handleRepublishClick = async (itemId) => {
 // BUTTON INJECTION
 // ============================================================================
 
-const createRepublishButton = (itemId) => {
-  const wrapper = document.createElement('div');
-
-  wrapper.style.cssText = 'position: absolute; top: 8px; left: 8px; z-index: 10;';
-
+// Two visual modes depending on where we end up injecting:
+//  - "inline": next to the official "Booster" button, full-width like a sibling action
+//  - "overlay": absolute overlay top-left of the item photo (fallback when actions row is missing)
+const createRepublishButton = (itemId, mode) => {
   const button = document.createElement('button');
 
   button.setAttribute('data-vrl-republish-btn', itemId);
   button.type = 'button';
   button.title = 'Republier cet article';
   button.textContent = '✨ Republier';
-  button.style.cssText = `
+
+  const baseStyle = `
     background: linear-gradient(135deg, #09b1ba 0%, #0891a8 100%);
     color: white;
     border: none;
-    padding: 6px 10px;
     border-radius: 6px;
-    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   `;
+
+  if (mode === 'inline') {
+    button.style.cssText = `${baseStyle}
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 13px;
+      margin-top: 6px;
+    `;
+  } else {
+    button.style.cssText = `${baseStyle}
+      padding: 6px 10px;
+      font-size: 12px;
+    `;
+  }
+
   button.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
     handleRepublishClick(itemId);
   });
 
-  wrapper.appendChild(button);
+  if (mode === 'inline') {
+    return button;
+  }
 
-  return wrapper;
+  const overlay = document.createElement('div');
+
+  overlay.style.cssText = 'position: absolute; top: 8px; left: 8px; z-index: 10;';
+  overlay.appendChild(button);
+
+  return overlay;
 };
 
 const findInjectionTarget = (itemElement) => {
@@ -143,12 +163,15 @@ const findInjectionTarget = (itemElement) => {
     return null;
   }
 
-  // Inject onto the closest positioned ancestor inside the card so the absolute
-  // overlay sits over the photo. The card root is usually positioned relative.
-  const overlay = itemElement.querySelector(CONFIG.selectors.actionsContainer)
-    ?? itemElement;
+  // Strategy 1: sibling of the official Bump (Booster) button — same row.
+  const bumpButton = itemElement.querySelector(CONFIG.selectors.bumpButton);
 
-  return { itemId, target: overlay };
+  if (bumpButton?.parentElement) {
+    return { itemId, target: bumpButton.parentElement, mode: 'inline' };
+  }
+
+  // Strategy 2: fallback to absolute overlay on the card itself.
+  return { itemId, target: itemElement, mode: 'overlay' };
 };
 
 export const injectRepublishButtons = () => {
@@ -163,14 +186,15 @@ export const injectRepublishButtons = () => {
         return;
       }
 
-      const { itemId, target } = result;
-      const button = createRepublishButton(itemId);
+      const { itemId, target, mode } = result;
+      const button = createRepublishButton(itemId, mode);
 
-      // Ensure target is positioned so absolute child anchors correctly
-      const computed = getComputedStyle(target);
+      if (mode === 'overlay') {
+        const computed = getComputedStyle(target);
 
-      if (computed.position === 'static') {
-        target.style.position = 'relative';
+        if (computed.position === 'static') {
+          target.style.position = 'relative';
+        }
       }
 
       target.appendChild(button);
@@ -220,4 +244,76 @@ export const scheduleRetries = () => {
   CONFIG.delays.retryAttempts.forEach((d) => {
     setTimeout(injectRepublishButtons, d);
   });
+
+  if (CONFIG.debug) {
+    setTimeout(diagnoseDressing, 3500);
+  }
+};
+
+// ============================================================================
+// DEBUG / DIAGNOSTICS
+// ============================================================================
+//
+// Dumps to console enough info to figure out which selectors Vinted is using
+// for the current build. Activated by CONFIG.debug. Safe to leave in dev,
+// must be off in production.
+
+let diagnoseHasRun = false;
+
+const diagnoseDressing = () => {
+  if (diagnoseHasRun) {
+    return;
+  }
+  diagnoseHasRun = true;
+
+  const log = (msg) => console.log(`[VRL diag] ${msg}`);
+
+  log('=== dressing DOM diagnostics ===');
+
+  // 1. Count candidates for each selector currently in CONFIG.
+  log(`itemContainer    matches: ${document.querySelectorAll(CONFIG.selectors.itemContainer).length}`);
+  log(`itemLink         matches: ${document.querySelectorAll(CONFIG.selectors.itemLink).length}`);
+  log(`actionsContainer matches: ${document.querySelectorAll(CONFIG.selectors.actionsContainer).length}`);
+  log(`itemListContainer matches: ${document.querySelectorAll(CONFIG.selectors.itemListContainer).length}`);
+
+  // 2. Top data-testid values present on the page (best signal for Vinted).
+  const testidCounts = new Map();
+  const all = document.querySelectorAll('[data-testid]');
+
+  all.forEach((el) => {
+    const id = el.getAttribute('data-testid');
+
+    testidCounts.set(id, (testidCounts.get(id) ?? 0) + 1);
+  });
+
+  const sortedTestids = Array.from(testidCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 30);
+
+  log(`Total [data-testid] elements: ${all.length}`);
+  log('Top 30 data-testid values:');
+  sortedTestids.forEach(([id, count]) => log(`  ${count}x ${id}`));
+
+  // 3. Walk up from the first /items/ link to find its real card container.
+  const firstItemLink = document.querySelector('a[href*="/items/"]');
+
+  if (firstItemLink) {
+    log(`First /items/ link href: ${firstItemLink.getAttribute('href')}`);
+    let node = firstItemLink;
+
+    for (let i = 0; i < 8 && node; i++) {
+      const tag = node.tagName?.toLowerCase();
+      const tid = node.getAttribute?.('data-testid');
+      const cls = (node.className && typeof node.className === 'string')
+        ? node.className.slice(0, 80)
+        : '';
+
+      log(`  ancestor[${i}] ${tag}${tid ? `[data-testid="${tid}"]` : ''}${cls ? ` class="${cls}"` : ''}`);
+      node = node.parentElement;
+    }
+  } else {
+    log('NO <a href*="/items/"> found on page — items not rendered yet or different markup.');
+  }
+
+  log('=== end ===');
 };

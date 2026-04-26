@@ -46,3 +46,7 @@ coverage/
 # Project notes (local only)
 .remember/
 _PROJECTS/
+
+# Local screenshots and shared assets (used as visual reference, not for git).
+# Dot-prefix avoids Chrome's "_*" reserved-name policy for unpacked extensions.
+.shares/
